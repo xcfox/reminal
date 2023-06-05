@@ -1,0 +1,29 @@
+{
+  "name": "reminal",
+  "version": "0.0.1",
+  "type": "module",
+  "source": "src/index.tsx",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "scripts": {
+    "build": "unbuild"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "dependencies": {
+    "yargs-parser": "^21.1.1"
+  },
+  "devDependencies": {
+    "unbuild": "latest"
+  }
+}

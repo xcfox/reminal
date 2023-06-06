@@ -24,7 +24,7 @@ const context = command('context')
 
 function App() {
   return (
-    <div style={{ width: '100vw' }}>
+    <div style={{ width: '100vw', maxWidth: '100%' }}>
       <normalContext.Provider value="hello">
         <Reminal commands={[echo, count, context]} />
       </normalContext.Provider>

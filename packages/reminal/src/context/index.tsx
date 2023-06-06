@@ -2,12 +2,14 @@ import React, { memo, useCallback, useContext, useMemo, useState } from 'react'
 import { createContext } from 'react'
 import { Command } from '../command'
 import { CommandGroup } from '../command/group'
+import { RenimalRenders, defaultRenders } from './TextRender'
 
 export interface ReminalController {
   root: CommandGroup
   execute: (command: string) => void
   addLine: (line: React.ReactNode) => void
   clearLines: () => void
+  renders: RenimalRenders
 }
 
 export const reminalContext = createContext<ReminalController>({
@@ -15,6 +17,7 @@ export const reminalContext = createContext<ReminalController>({
   execute: () => undefined,
   addLine: () => undefined,
   clearLines: () => undefined,
+  renders: defaultRenders,
 })
 
 export const linesContext = createContext<React.ReactNode[]>([])
@@ -31,10 +34,14 @@ export function useReminal() {
 
 export interface ProviderProps {
   commands?: Command<any, any>[] | CommandGroup
+  renders?: Partial<ReminalController['renders']>
 }
 
 export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
-  ({ children, commands }) => {
+  ({ children, commands, renders: rendersIn }) => {
+    const renders = useMemo<ReminalController['renders']>(() => {
+      return { ...defaultRenders, ...rendersIn }
+    }, [rendersIn])
     const root = useMemo(() => {
       if (commands instanceof CommandGroup) return commands
       const root = new CommandGroup('')
@@ -44,11 +51,16 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
 
     const [inputValue, setInputValue] = useState('')
 
-    const { lines, execute, addLine, clearLines } = useReminalLines(root)
+    const { lines, execute, addLine, clearLines } = useReminalLines(
+      root,
+      renders
+    )
 
     return (
       <linesContext.Provider value={lines}>
-        <reminalContext.Provider value={{ execute, addLine, clearLines, root }}>
+        <reminalContext.Provider
+          value={{ execute, addLine, clearLines, root, renders }}
+        >
           <setInputValueContext.Provider value={setInputValue}>
             <inputValueContext.Provider value={inputValue}>
               {children}
@@ -60,7 +72,10 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
   }
 )
 
-export function useReminalLines(root: CommandGroup) {
+export function useReminalLines(
+  root: CommandGroup,
+  renders: ReminalController['renders']
+) {
   const [lines, setLines] = useState<React.ReactNode[]>([])
 
   const addLine = useCallback((line: React.ReactNode) => {
@@ -73,11 +88,21 @@ export function useReminalLines(root: CommandGroup) {
 
   const execute = useCallback(
     async (command: string) => {
-      const reminal = { execute, addLine, clearLines, root }
-      const answer = await root.exec(command, reminal)
-      if (answer) reminal.addLine(answer)
+      const reminal = { execute, addLine, clearLines, root, renders }
+      try {
+        const answer = await root.exec(command, reminal)
+        if (answer) {
+          if (typeof answer === 'string') {
+            addLine(<renders.TextRender text={answer} />)
+          } else {
+            reminal.addLine(answer)
+          }
+        }
+      } catch (error) {
+        addLine(<renders.ErrorRender error={error} />)
+      }
     },
-    [addLine, clearLines, root]
+    [addLine, clearLines, renders, root]
   )
 
   return { lines, execute, addLine, clearLines }

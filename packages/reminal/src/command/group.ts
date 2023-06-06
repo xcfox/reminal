@@ -1,5 +1,8 @@
+import React, { createElement } from 'react'
 import { Command } from '.'
 import { ReminalController } from '../context'
+import { notNil } from '../utils/notNil'
+import { helpCommand } from './help'
 
 export interface CommandGroupMeta {
   name: string
@@ -10,9 +13,10 @@ export interface CommandGroupMeta {
 export class CommandGroup {
   meta: CommandGroupMeta
   map: Map<string, Command | CommandGroup> = new Map()
-  commands: (Command | CommandGroup)[] = []
+  commands: (Command<any, any> | CommandGroup)[] = []
   constructor(name: string) {
     this.meta = { name }
+    this.add(helpCommand)
   }
 
   parent?: CommandGroup
@@ -22,23 +26,31 @@ export class CommandGroup {
   }
 
   /** Generate help documents according to meta and subcommands */
-  getHelp(): string[] {
+  getHelp(): string {
     const fullName = this.getFullName().join(' ')
-    const help = [
-      `${fullName} - ${this.meta.description ?? ''}`,
-      '',
-      'Usage:',
-      `  ${fullName} <command> [options]`,
-      '',
-      'Commands:',
+    const help = []
+
+    if (fullName) {
+      help.push(`${fullName} - ${this.meta.description ?? ''}`)
+      help.push('')
+    }
+
+    help.push('Usage:', `  ${fullName} <command> [options]`)
+    help.push('')
+    help.push('Commands:')
+    help.push(
       ...this.commands.map((cmd) => {
         const name = cmd.meta.name
         const alias = cmd.meta.alias?.join(', ') ?? ''
         const description = cmd.meta.description ?? ''
-        return `  ${name} (${alias}) - ${description}`
-      }),
-    ]
-    return help
+        let commandH = `  ${name}`
+        if (alias) commandH += ` (${alias})`
+        commandH += ` - ${description}`
+        return commandH
+      })
+    )
+
+    return help.filter(notNil).join('\n')
   }
 
   name(name: string) {
@@ -54,7 +66,7 @@ export class CommandGroup {
     this.meta.alias.push(...alias)
     return this
   }
-  add(...commands: (Command | CommandGroup)[]) {
+  add(...commands: (Command<any, any> | CommandGroup)[]) {
     commands.forEach((command) => {
       const names = [command.meta.name, ...(command.meta.alias ?? [])]
       command.parent = this
@@ -65,15 +77,23 @@ export class CommandGroup {
     this.commands.push(...commands)
     return this
   }
+  remove(...commands: (Command<any, any> | CommandGroup)[]) {
+    commands.forEach((command) => {
+      const names = [command.meta.name, ...(command.meta.alias ?? [])]
+      names.forEach((name) => {
+        this.map.delete(name)
+      })
+    })
+    this.commands = this.commands.filter((c) => !commands.includes(c))
+    return this
+  }
   async exec(
     command: string | string[],
     reminal: ReminalController
   ): Promise<void | React.ReactNode> {
     const [cmd, ...args] = Array.isArray(command) ? command : command.split(' ')
 
-    if (cmd === 'help') {
-      return reminal.addLine(this.getHelp())
-    }
+    const { renders } = reminal
 
     const target = this.map.get(cmd)
     if (target instanceof Command) {
@@ -81,7 +101,16 @@ export class CommandGroup {
     } else if (target instanceof CommandGroup) {
       return target.exec(args.join(' '), reminal)
     } else {
-      return reminal.addLine(`Command ${cmd} not found`)
+      const fullCommand = [...this.getFullName(), cmd].join(' ')
+      reminal.addLine(
+        createElement(renders.HistoryRender, { text: fullCommand })
+      )
+      const error = new Error(`Command ${fullCommand} not found`)
+      reminal.addLine(createElement(renders.ErrorRender, { error }))
+
+      reminal.addLine(
+        createElement(renders.HelpRender, { text: this.getHelp() })
+      )
     }
   }
 }

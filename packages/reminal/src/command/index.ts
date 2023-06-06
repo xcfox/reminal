@@ -2,6 +2,7 @@ import { ReminalController } from '../context'
 import React from 'react'
 import parse from 'yargs-parser/browser'
 import { CommandGroup } from './group'
+import { notNil } from '../utils/notNil'
 
 export type OptionType =
   | typeof String
@@ -46,10 +47,14 @@ export interface CommandContext {
   commandRaw: string
 }
 
-export type CommandAction<Options, Argments> = (args: {
+export type CommandAction<
+  Options extends Record<string, unknown> | void = void,
+  Argments extends unknown[] = unknown[]
+> = (args: {
   options: Options
   argments: Argments
   reminal: ReminalController
+  command: Command<Options, Argments>
 }) => Promise<React.ReactNode | void> | React.ReactNode | void
 
 export class Command<
@@ -64,6 +69,56 @@ export class Command<
 
   getFullName(): string[] {
     return [...(this.parent?.getFullName() ?? []), this.meta.name]
+  }
+
+  /** Generate help documents according to meta */
+  getHelp(): string {
+    const fullName = this.getFullName().join(' ')
+    const help = []
+
+    if (fullName) {
+      help.push(`${fullName} - ${this.meta.description ?? ''}`)
+      help.push('')
+    }
+
+    help.push(
+      'Usage:',
+      `  ${fullName} ${
+        this.meta.argments?.map((arg) => `<${arg.name}>`).join(' ') ?? ''
+      } ${this.meta.options?.length ? '[options]' : ''}`
+    )
+
+    if (this.meta.argments?.length) {
+      help.push('')
+      help.push('Argments:')
+      help.push(
+        ...(this.meta.argments?.map((arg) => {
+          const name = arg.name
+          const description = arg.description ?? ''
+          let argmentH = `  ${name}`
+          argmentH += ` - ${description}`
+          return argmentH
+        }) ?? [])
+      )
+    }
+
+    if (this.meta.options?.length) {
+      help.push('')
+      help.push('Options:')
+      help.push(
+        ...this.meta.options.map((opt) => {
+          const name = opt.name
+          const alias = opt.alias?.join(', ') ?? ''
+          const description = opt.description ?? ''
+          let optionH = `  ${name}`
+          if (alias) optionH += ` (${alias})`
+          optionH += ` - ${description}`
+          return optionH
+        })
+      )
+    }
+
+    return help.filter(notNil).join('\n')
   }
 
   name(name: string) {
@@ -170,13 +225,15 @@ export class Command<
     })
 
     const { _: argments, ...options } = parse(args, paserOptions)
+    // TODO: validate options
+    // TODO: ensure argments type
     return { argments, options } as any
   }
 
   exec(args: string | string[], reminal: ReminalController) {
     const { options, argments } = this.parse(args)
     reminal.addLine(`> ${this.getFullName().join(' ')} ${args}`)
-    return this.meta.action?.({ options, argments, reminal })
+    return this.meta.action?.({ options, argments, reminal, command: this })
   }
 }
 

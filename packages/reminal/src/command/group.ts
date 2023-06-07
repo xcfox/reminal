@@ -16,13 +16,21 @@ export class CommandGroup {
   commands: (Command<any, any> | CommandGroup)[] = []
   constructor(name: string) {
     this.meta = { name }
-    this.add(helpCommand)
+    this.add(helpCommand.fork())
   }
 
   parent?: CommandGroup
 
   getFullName(): string[] {
     return [...(this.parent?.getFullName() ?? []), this.meta.name]
+  }
+
+  /** Get a deep copy of the command */
+  fork() {
+    const command = new CommandGroup(this.meta.name)
+    command.meta = { ...this.meta }
+    command.add(...this.commands.map((cmd) => cmd.fork()))
+    return command
   }
 
   /** Generate help documents according to meta and subcommands */

@@ -22,18 +22,16 @@ export const reminalContext = createContext<ReminalController>({
 
 export const linesContext = createContext<React.ReactNode[]>([])
 
-export const inputValueContext = createContext<string>('')
-
-export const setInputValueContext = createContext<
-  React.Dispatch<React.SetStateAction<string>>
->(() => undefined)
+export const inputValueContext = createContext<
+  [string, React.Dispatch<React.SetStateAction<string>>]
+>(['', () => undefined])
 
 export function useReminal() {
   return useContext(reminalContext)
 }
 
 export interface ProviderProps {
-  commands?: Command<any, any>[] | CommandGroup
+  commands?: (Command<any, any> | CommandGroup)[] | CommandGroup
   renders?: Partial<ReminalController['renders']>
 }
 
@@ -49,7 +47,7 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
       return root
     }, [commands])
 
-    const [inputValue, setInputValue] = useState('')
+    const inputValue = useState('')
 
     const { lines, execute, addLine, clearLines } = useReminalLines(
       root,
@@ -61,11 +59,9 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
         <reminalContext.Provider
           value={{ execute, addLine, clearLines, root, renders }}
         >
-          <setInputValueContext.Provider value={setInputValue}>
-            <inputValueContext.Provider value={inputValue}>
-              {children}
-            </inputValueContext.Provider>
-          </setInputValueContext.Provider>
+          <inputValueContext.Provider value={inputValue}>
+            {children}
+          </inputValueContext.Provider>
         </reminalContext.Provider>
       </linesContext.Provider>
     )

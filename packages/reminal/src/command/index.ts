@@ -4,6 +4,8 @@ import parse from 'yargs-parser/browser'
 import { CommandGroup } from './group'
 import { notNil } from '../utils/notNil'
 
+export * from './group'
+
 export type OptionType =
   | typeof String
   | typeof Boolean
@@ -69,6 +71,13 @@ export class Command<
 
   getFullName(): string[] {
     return [...(this.parent?.getFullName() ?? []), this.meta.name]
+  }
+
+  /** Get a deep copy of the command */
+  fork() {
+    const command = new Command<Options, Argments>(this.meta.name)
+    command.meta = { ...this.meta }
+    return command
   }
 
   /** Generate help documents according to meta */

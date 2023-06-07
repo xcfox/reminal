@@ -1,6 +1,7 @@
 import { Reminal, command } from 'reminal'
 import { Counter } from './conter'
 import { normalContext } from './context'
+import { book } from './book'
 
 const echo = command('echo')
   .description('echo a string')
@@ -26,7 +27,7 @@ function App() {
   return (
     <div style={{ width: '100vw', maxWidth: '100%' }}>
       <normalContext.Provider value="hello">
-        <Reminal commands={[echo, count, context]} />
+        <Reminal commands={[echo, count, context, book]} />
       </normalContext.Provider>
     </div>
   )

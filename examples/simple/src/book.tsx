@@ -4,7 +4,17 @@ class Book {
   constructor(public name: string, public author: string) {}
 }
 
-const bookList: Book[] = [new Book('三体', '刘慈欣')]
+const bookList: Book[] = [
+  new Book('三体', '刘慈欣'),
+  new Book('神的九十亿个名字', '阿瑟•克拉克'),
+  new Book('红楼梦', '曹雪芹'),
+  new Book('西游记', '吴承恩'),
+  new Book('水浒传', '施耐庵'),
+  new Book('三国演义', '罗贯中'),
+  new Book('西厢记', '王实甫'),
+  new Book('儒林外史', '吴敬梓'),
+  new Book('金瓶梅', '兰陵笑笑生'),
+]
 
 export const book = commandGroup('book')
   .description('管理图书：添加图书，查看书籍信息，借书，还书')

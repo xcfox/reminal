@@ -3,11 +3,16 @@ import { createContext } from 'react'
 import { Command } from '../command'
 import { CommandGroup } from '../command/group'
 import { RenimalRenders, defaultRenders } from './TextRender'
+import { Mutatable } from './Mutatable'
 
 export interface ReminalController {
   root: CommandGroup
   execute: (command: string) => void
   addLine: (line: React.ReactNode) => void
+  addMutatableLine: <T extends object>(
+    Component: React.ComponentType<T>,
+    props: T
+  ) => (props: T) => void
   clearLines: () => void
   renders: RenimalRenders
 }
@@ -16,6 +21,7 @@ export const reminalContext = createContext<ReminalController>({
   root: new CommandGroup(''),
   execute: () => undefined,
   addLine: () => undefined,
+  addMutatableLine: () => () => undefined,
   clearLines: () => undefined,
   renders: defaultRenders,
 })
@@ -49,16 +55,11 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
 
     const inputValue = useState('')
 
-    const { lines, execute, addLine, clearLines } = useReminalLines(
-      root,
-      renders
-    )
+    const { lines, ...reminal } = useReminalLines(root, renders)
 
     return (
       <linesContext.Provider value={lines}>
-        <reminalContext.Provider
-          value={{ execute, addLine, clearLines, root, renders }}
-        >
+        <reminalContext.Provider value={{ ...reminal, root, renders }}>
           <inputValueContext.Provider value={inputValue}>
             {children}
           </inputValueContext.Provider>
@@ -78,13 +79,36 @@ export function useReminalLines(
     setLines((lines) => [...lines, line])
   }, [])
 
+  const addMutatableLine = useCallback(
+    <T extends object>(Component: React.ComponentType<T>, props: T) => {
+      const ref = React.createRef<{
+        forceUpdate: (props: T) => void
+      }>()
+      const line = (
+        <Mutatable actionRef={ref} Component={Component} props={props} />
+      )
+      setLines((lines) => [...lines, line])
+      const update = (props: T) => ref.current?.forceUpdate(props)
+      return update
+    },
+
+    []
+  )
+
   const clearLines = useCallback(() => {
     setLines([])
   }, [])
 
   const execute = useCallback(
     async (command: string) => {
-      const reminal = { execute, addLine, clearLines, root, renders }
+      const reminal = {
+        execute,
+        addLine,
+        clearLines,
+        root,
+        renders,
+        addMutatableLine,
+      }
       try {
         const answer = await root.exec(command, reminal)
         if (answer) {
@@ -98,8 +122,8 @@ export function useReminalLines(
         addLine(<renders.ErrorRender error={error} />)
       }
     },
-    [addLine, clearLines, renders, root]
+    [addLine, addMutatableLine, clearLines, renders, root]
   )
 
-  return { lines, execute, addLine, clearLines }
+  return { lines, execute, addLine, clearLines, addMutatableLine }
 }

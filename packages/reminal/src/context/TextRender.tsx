@@ -14,7 +14,7 @@ export interface TextRenderProps {
 export type TextRender = React.ComponentType<TextRenderProps>
 
 export const DefaultTextRender: TextRender = memo(({ text }) => {
-  return <>{text}</>
+  return <div style={{ whiteSpace: 'pre-wrap' }}>{text}</div>
 })
 
 export const DefaultHistoryRender: TextRender = memo(({ text }) => {

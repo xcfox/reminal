@@ -1,9 +1,19 @@
-import React, { useContext, useMemo } from 'react'
+import React, { useContext, useEffect, useMemo } from 'react'
 import { Command, CommandGroup, inputValueContext, useReminal } from '..'
 import { commandScore } from '../utils/command-score'
 
-export const TipBox = React.memo(() => {
+export const TipBox = React.memo<{
+  onTipsChange?: (tips: CommandAbstract[]) => void
+}>(({ onTipsChange }) => {
   const tips = useTips()
+
+  useEffect(() => {
+    onTipsChange?.(tips)
+    return () => {
+      onTipsChange?.([])
+    }
+  }, [onTipsChange, tips])
+
   return (
     <div>
       {tips.map((tip) => (

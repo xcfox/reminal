@@ -99,7 +99,9 @@ export class CommandGroup {
     command: string | string[],
     reminal: ReminalController
   ): Promise<void | React.ReactNode> {
-    const [cmd, ...args] = Array.isArray(command) ? command : command.split(' ')
+    const [cmd, ...args] = Array.isArray(command)
+      ? command
+      : command.trim().split(' ')
 
     const { renders } = reminal
 

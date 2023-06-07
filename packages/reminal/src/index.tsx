@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { Input } from './Input'
-import { Provider, linesContext } from './context'
+import { Provider, executingContext, linesContext } from './context'
 import { ProviderProps } from './context'
 
 export * from './command'
@@ -9,12 +9,13 @@ export * from './Input'
 
 const ReminalInner: React.FC = () => {
   const lines = useContext(linesContext)
+  const executing = useContext(executingContext)
   return (
     <div style={{ width: '100%' }}>
       {lines.map((line, index) => (
         <div key={index}>{line}</div>
       ))}
-      <Input />
+      {!executing && <Input />}
     </div>
   )
 }

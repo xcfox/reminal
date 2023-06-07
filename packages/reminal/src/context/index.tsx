@@ -28,9 +28,19 @@ export const reminalContext = createContext<ReminalController>({
 
 export const linesContext = createContext<React.ReactNode[]>([])
 
+export const executingContext = createContext(false)
+
+export const scrollToBottomContext = createContext<() => void>(() => undefined)
+
 export const inputValueContext = createContext<
-  [string, React.Dispatch<React.SetStateAction<string>>]
->(['', () => undefined])
+  ReturnType<typeof useInputValue>
+>({
+  value: '',
+  setValue: () => undefined,
+  tempValue: undefined,
+  setTempValue: () => undefined,
+  realValue: '',
+})
 
 export function useReminal() {
   return useContext(reminalContext)
@@ -39,10 +49,11 @@ export function useReminal() {
 export interface ProviderProps {
   commands?: (Command<any, any> | CommandGroup)[] | CommandGroup
   renders?: Partial<ReminalController['renders']>
+  scrollContainer?: React.RefObject<HTMLElement>
 }
 
 export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
-  ({ children, commands, renders: rendersIn }) => {
+  ({ children, commands, renders: rendersIn, scrollContainer }) => {
     const renders = useMemo<ReminalController['renders']>(() => {
       return { ...defaultRenders, ...rendersIn }
     }, [rendersIn])
@@ -53,27 +64,47 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
       return root
     }, [commands])
 
-    const inputValue = useState('')
+    const inputValue = useInputValue()
 
-    const { lines, ...reminal } = useReminalLines(root, renders)
+    const scrollToBottom = useCallback(() => {
+      const scroller = scrollContainer?.current ?? window
+      const top =
+        scroller instanceof HTMLElement
+          ? scroller.scrollHeight
+          : scroller.document.body.scrollHeight
+      scroller.scrollTo({ top, behavior: 'smooth' })
+    }, [scrollContainer])
+
+    const { lines, executing, ...reminal } = useReminalLines({
+      root,
+      renders,
+    })
 
     return (
       <linesContext.Provider value={lines}>
-        <reminalContext.Provider value={{ ...reminal, root, renders }}>
-          <inputValueContext.Provider value={inputValue}>
-            {children}
-          </inputValueContext.Provider>
-        </reminalContext.Provider>
+        <scrollToBottomContext.Provider value={scrollToBottom}>
+          <executingContext.Provider value={executing}>
+            <reminalContext.Provider value={{ ...reminal, root, renders }}>
+              <inputValueContext.Provider value={inputValue}>
+                {children}
+              </inputValueContext.Provider>
+            </reminalContext.Provider>
+          </executingContext.Provider>
+        </scrollToBottomContext.Provider>
       </linesContext.Provider>
     )
   }
 )
 
-export function useReminalLines(
-  root: CommandGroup,
+export function useReminalLines({
+  root,
+  renders,
+}: {
+  root: CommandGroup
   renders: ReminalController['renders']
-) {
+}) {
   const [lines, setLines] = useState<React.ReactNode[]>([])
+  const [executing, setExecuting] = useState(false)
 
   const addLine = useCallback((line: React.ReactNode) => {
     setLines((lines) => [...lines, line])
@@ -110,6 +141,7 @@ export function useReminalLines(
         addMutatableLine,
       }
       try {
+        setExecuting(true)
         const answer = await root.exec(command, reminal)
         if (answer) {
           if (typeof answer === 'string') {
@@ -120,10 +152,26 @@ export function useReminalLines(
         }
       } catch (error) {
         addLine(<renders.ErrorRender error={error} />)
+      } finally {
+        setExecuting(false)
       }
     },
     [addLine, addMutatableLine, clearLines, renders, root]
   )
 
-  return { lines, execute, addLine, clearLines, addMutatableLine }
+  return { lines, execute, addLine, clearLines, addMutatableLine, executing }
+}
+
+export function useInputValue() {
+  const [value, setValue] = useState('')
+  const [tempValue, setTempValue] = useState<string>()
+  const realValue = tempValue ?? value
+
+  return {
+    value,
+    setValue,
+    tempValue,
+    setTempValue,
+    realValue,
+  }
 }

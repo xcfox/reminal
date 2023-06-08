@@ -117,6 +117,8 @@ export function useTextarea() {
 
   const tips = useTips(historyValue ?? value, selectedWord)
 
+  const lastSelectionStart = useRef(0)
+
   const reminal = useReminal()
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -133,25 +135,30 @@ export function useTextarea() {
           e.preventDefault()
           // FIXME: 与历史记录一起使用时冲突
           setFocusedTipIndex((index) => {
-            let nextValue = (index += e.key === 'ArrowUp' ? -1 : 1)
+            let nextValue = index + (e.key === 'ArrowUp' ? -1 : 1)
             // 修正越界
-            nextValue = Math.min(
-              Math.max(nextValue, -1 - history.current.length),
-              tips.list.length - 1
-            )
+            if (
+              nextValue > tips.list.length - 1 ||
+              nextValue < -1 - history.current.length
+            ) {
+              nextValue = -1
+            }
+
+            // 记录光标位置
+            if (index === -1 && ref.current) {
+              lastSelectionStart.current = ref.current.selectionStart
+            }
 
             if (nextValue === -1) {
               setTipValue(undefined)
+              setHistoryValue(undefined)
 
+              // 还原光标位置
               const t = ref.current
               if (t) {
-                const [, nextSelectionStart] = replaceSelectedWord(
-                  t,
-                  selectedWord
-                )
                 requestAnimationFrame(() => {
-                  t.selectionStart = nextSelectionStart
-                  t.selectionEnd = nextSelectionStart
+                  t.selectionStart = lastSelectionStart.current
+                  t.selectionEnd = lastSelectionStart.current
                 })
               }
             } else if (nextValue >= 0) {
@@ -161,7 +168,11 @@ export function useTextarea() {
                 const t = ref.current
                 if (t) {
                   const [nextTipValue, nextSelectionStart] =
-                    replaceSelectedWord(t, tips.list[nextValue].name.trim())
+                    replaceSelectedWord(
+                      t.value,
+                      tips.list[nextValue].name.trim(),
+                      t.selectionStart
+                    )
                   setTipValue(nextTipValue)
                   requestAnimationFrame(() => {
                     t.selectionStart = nextSelectionStart
@@ -191,7 +202,6 @@ export function useTextarea() {
       history,
       realValue,
       reminal,
-      selectedWord,
       setHistoryValue,
       setTipValue,
       setValue,
@@ -313,15 +323,15 @@ export function flatGroup(group: CommandGroup): CommandAbstract[] {
 
 function getSelectedWord(t: HTMLTextAreaElement) {
   const leftValue = t.value.substring(0, t.selectionStart)
-  const rightValue = t.value.substring(t.selectionEnd)
+  const rightValue = t.value.substring(t.selectionStart)
   const leftHalfWord = leftValue.match(/(\S+)$/)
   const rightHalfWord = rightValue.match(/^(\S+)/)
   return (leftHalfWord?.[1] ?? '') + (rightHalfWord?.[1] ?? '')
 }
 
-function replaceSelectedWord(t: HTMLTextAreaElement, word: string) {
-  const leftValue = t.value.substring(0, t.selectionStart)
-  const rightValue = t.value.substring(t.selectionEnd)
+function replaceSelectedWord(text: string, word: string, start: number) {
+  const leftValue = text.substring(0, start)
+  const rightValue = text.substring(start)
   const leftHalfWord = leftValue.match(/(\S+)$/)
   const rightHalfWord = rightValue.match(/^(\S+)/)
   const left = leftHalfWord?.[1] ?? ''

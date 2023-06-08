@@ -95,6 +95,19 @@ export class CommandGroup {
     this.commands = this.commands.filter((c) => !commands.includes(c))
     return this
   }
+
+  matchCommand(command: string | string[]): Command<any, any> | undefined {
+    const [cmd, ...args] = Array.isArray(command)
+      ? command
+      : command.trim().split(' ')
+    const target = this.map.get(cmd)
+    if (target instanceof Command) {
+      return target
+    } else if (target instanceof CommandGroup) {
+      return target.matchCommand(args)
+    }
+  }
+
   async exec(
     command: string | string[],
     reminal: ReminalController

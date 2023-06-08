@@ -77,8 +77,6 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
       return root
     }, [commands])
 
-    const inputValue = useInputValue()
-
     const scrollToBottom = useCallback(() => {
       const scroller = scrollContainer?.current ?? window
       const top =
@@ -99,9 +97,7 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
           <scrollToBottomContext.Provider value={scrollToBottom}>
             <executingContext.Provider value={executing}>
               <reminalContext.Provider value={{ ...reminal, root, renders }}>
-                <inputValueContext.Provider value={inputValue}>
-                  {children}
-                </inputValueContext.Provider>
+                <InputProvider>{children}</InputProvider>
               </reminalContext.Provider>
             </executingContext.Provider>
           </scrollToBottomContext.Provider>
@@ -187,6 +183,15 @@ export function useReminalLines({
     executing,
   }
 }
+
+const InputProvider = memo<React.PropsWithChildren>(({ children }) => {
+  const input = useInputValue()
+  return (
+    <inputValueContext.Provider value={input}>
+      {children}
+    </inputValueContext.Provider>
+  )
+})
 
 export function useInputValue() {
   const [value, setValue] = useState('')

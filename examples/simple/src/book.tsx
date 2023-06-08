@@ -23,6 +23,7 @@ export const book = commandGroup('book')
       .description('添加图书')
       .option('name', '书名', { required: true })
       .option('author', '作者', { required: true })
+      .option('lendOut', '是否借出', { type: Boolean })
       .action(({ options }) => {
         bookList.push(new Book(options.name, options.author))
         return '添加成功'

@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import {
+  historyContext,
   inputValueContext,
   scrollToBottomContext,
   useReminal,
@@ -55,23 +56,32 @@ export const Input = memo(() => {
   )
 })
 
-// TODO: 历史记录
 // TODO: 参数与选项提示
 
 export function useTextarea() {
-  const { value, setValue, tempValue, setTempValue, realValue } =
-    useContext(inputValueContext)
+  const {
+    value,
+    setValue,
+    historyValue,
+    setHistoryValue,
+    setTipValue,
+    realValue,
+  } = useContext(inputValueContext)
   const [focusedTipIndex, setFocusedTipIndex] = useState(-1)
   const [isFocused, setIsFocused] = useState(false)
 
+  const history = useContext(historyContext)
+
+  /** 当输入框值改变时清除临时值 */
   useMemo(() => {
     if (value) {
-      setTempValue(undefined)
+      setHistoryValue(undefined)
+      setTipValue(undefined)
       setFocusedTipIndex(-1)
     }
-  }, [setTempValue, value])
+  }, [setHistoryValue, setTipValue, value])
 
-  const tips = useTips(value)
+  const tips = useTips(historyValue ?? value)
 
   const reminal = useReminal()
   const onKeyDown = useCallback(
@@ -79,7 +89,8 @@ export function useTextarea() {
       if (e.key === 'Enter' && !e.shiftKey) {
         if (realValue) {
           setValue('')
-          setTempValue(undefined)
+          setHistoryValue(undefined)
+          setTipValue(undefined)
           reminal.execute(realValue)
         }
         e.preventDefault()
@@ -89,17 +100,27 @@ export function useTextarea() {
           setFocusedTipIndex((index) => {
             let nextValue = (index += e.key === 'ArrowUp' ? -1 : 1)
             // 修正越界
-            if (nextValue < -1) nextValue = tips.length - 1
-            if (nextValue >= tips.length) nextValue = -1
+            nextValue = Math.min(
+              Math.max(nextValue, -1 - history.current.length),
+              tips.length - 1
+            )
 
-            if (nextValue === -1) setTempValue(undefined)
-            else setTempValue(tips[nextValue].name.trim())
+            if (nextValue === -1) setTipValue(undefined)
+            else if (nextValue >= 0) {
+              setTipValue(tips[nextValue].name.trim())
+              setHistoryValue(undefined)
+            } else {
+              setHistoryValue(
+                history.current[history.current.length + 1 + nextValue]
+              )
+              setTipValue(undefined)
+            }
             return nextValue
           })
         }
       }
     },
-    [realValue, reminal, setTempValue, setValue, tips]
+    [history, realValue, reminal, setHistoryValue, setTipValue, setValue, tips]
   )
 
   const onChange = useCallback(
@@ -123,10 +144,10 @@ export function useTextarea() {
       onChange,
       onFocus: () => setIsFocused(true),
       onBlur: () => setIsFocused(false),
-      value: tempValue ?? value,
+      value: realValue,
       rows: 1,
     }),
-    [onChange, onKeyDown, tempValue, value]
+    [onChange, onKeyDown, realValue]
   )
 
   return { isFocused, tips, focusedTipIndex, bind }

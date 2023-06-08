@@ -1,4 +1,11 @@
-import React, { memo, useCallback, useContext, useMemo, useState } from 'react'
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createContext } from 'react'
 import { Command } from '../command'
 import { CommandGroup } from '../command/group'
@@ -32,13 +39,19 @@ export const executingContext = createContext(false)
 
 export const scrollToBottomContext = createContext<() => void>(() => undefined)
 
+export const historyContext = createContext<React.MutableRefObject<string[]>>({
+  current: [],
+})
+
 export const inputValueContext = createContext<
   ReturnType<typeof useInputValue>
 >({
   value: '',
   setValue: () => undefined,
-  tempValue: undefined,
-  setTempValue: () => undefined,
+  tipValue: undefined,
+  setTipValue: () => undefined,
+  historyValue: undefined,
+  setHistoryValue: () => undefined,
   realValue: '',
 })
 
@@ -75,22 +88,24 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
       scroller.scrollTo({ top, behavior: 'smooth' })
     }, [scrollContainer])
 
-    const { lines, executing, ...reminal } = useReminalLines({
+    const { lines, executing, history, ...reminal } = useReminalLines({
       root,
       renders,
     })
 
     return (
       <linesContext.Provider value={lines}>
-        <scrollToBottomContext.Provider value={scrollToBottom}>
-          <executingContext.Provider value={executing}>
-            <reminalContext.Provider value={{ ...reminal, root, renders }}>
-              <inputValueContext.Provider value={inputValue}>
-                {children}
-              </inputValueContext.Provider>
-            </reminalContext.Provider>
-          </executingContext.Provider>
-        </scrollToBottomContext.Provider>
+        <historyContext.Provider value={history}>
+          <scrollToBottomContext.Provider value={scrollToBottom}>
+            <executingContext.Provider value={executing}>
+              <reminalContext.Provider value={{ ...reminal, root, renders }}>
+                <inputValueContext.Provider value={inputValue}>
+                  {children}
+                </inputValueContext.Provider>
+              </reminalContext.Provider>
+            </executingContext.Provider>
+          </scrollToBottomContext.Provider>
+        </historyContext.Provider>
       </linesContext.Provider>
     )
   }
@@ -105,6 +120,8 @@ export function useReminalLines({
 }) {
   const [lines, setLines] = useState<React.ReactNode[]>([])
   const [executing, setExecuting] = useState(false)
+
+  const history = useRef<string[]>([])
 
   const addLine = useCallback((line: React.ReactNode) => {
     setLines((lines) => [...lines, line])
@@ -142,6 +159,7 @@ export function useReminalLines({
       }
       try {
         setExecuting(true)
+        history.current.push(command)
         const answer = await root.exec(command, reminal)
         if (answer) {
           if (typeof answer === 'string') {
@@ -159,19 +177,30 @@ export function useReminalLines({
     [addLine, addMutatableLine, clearLines, renders, root]
   )
 
-  return { lines, execute, addLine, clearLines, addMutatableLine, executing }
+  return {
+    lines,
+    execute,
+    addLine,
+    clearLines,
+    addMutatableLine,
+    history,
+    executing,
+  }
 }
 
 export function useInputValue() {
   const [value, setValue] = useState('')
-  const [tempValue, setTempValue] = useState<string>()
-  const realValue = tempValue ?? value
+  const [tipValue, setTipValue] = useState<string>()
+  const [historyValue, setHistoryValue] = useState<string>()
+  const realValue = tipValue ?? historyValue ?? value
 
   return {
     value,
     setValue,
-    tempValue,
-    setTempValue,
+    setTipValue,
+    setHistoryValue,
+    tipValue,
+    historyValue,
     realValue,
   }
 }

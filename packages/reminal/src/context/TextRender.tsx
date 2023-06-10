@@ -37,6 +37,16 @@ export const DefaultErrorRender: ErrorRender = memo(({ error }) => {
     text = error.message
   } else if (typeof error === 'string') {
     text = error
+  } else if (Array.isArray(error)) {
+    const messages: string[] = []
+    error.forEach((e) => {
+      if (e instanceof Error) {
+        messages.push(e.message)
+      } else if (typeof e === 'string') {
+        messages.push(e)
+      }
+    })
+    text = messages.join('\n')
   }
   return <>❌{text}</>
 })

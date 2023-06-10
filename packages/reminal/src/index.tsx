@@ -10,6 +10,7 @@ export * from './Input'
 const ReminalInner: React.FC = () => {
   const lines = useContext(linesContext)
   const executing = useContext(executingContext)
+
   return (
     <div style={{ width: '100%' }}>
       {lines.map((line, index) => (

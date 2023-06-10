@@ -2,7 +2,6 @@ import React, { createElement } from 'react'
 import { Command } from '.'
 import { ReminalController } from '../context'
 import { notNil } from '../utils/notNil'
-import { helpCommand } from './help'
 
 export interface CommandGroupMeta {
   name: string
@@ -16,7 +15,6 @@ export class CommandGroup {
   commands: (Command<any, any> | CommandGroup)[] = []
   constructor(name: string) {
     this.meta = { name }
-    this.add(helpCommand.fork())
   }
 
   parent?: CommandGroup

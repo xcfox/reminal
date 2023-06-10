@@ -1,8 +1,9 @@
 import { ReminalController } from '../context'
-import React from 'react'
+import React, { createElement } from 'react'
 import parse from 'yargs-parser/browser'
 import { CommandGroup } from './group'
 import { notNil } from '../utils/notNil'
+import { validate } from './errors'
 
 export * from './group'
 
@@ -28,7 +29,7 @@ export interface CommandOption<
 }
 
 export type CommandArgment<T extends OptionType = typeof String> = Omit<
-  CommandOption<T>,
+  CommandOption<T, any, CommandOptionType<T>>,
   'alias' | 'required'
 >
 
@@ -178,6 +179,10 @@ export class Command<
   ) {
     const argment = { name, description, ...options }
     this.meta.argments ??= []
+    const last = this.meta.argments[this.meta.argments.length - 1]
+    if (last && Array.isArray(last.type)) {
+      throw new Error('Cannot add argment after variadic argment')
+    }
     this.meta.argments.push(argment)
     return this as unknown as Command<
       Options,
@@ -234,14 +239,23 @@ export class Command<
     })
 
     const { _: argments, ...options } = parse(args, paserOptions)
-    // TODO: validate options
-    // TODO: ensure argments type
     return { argments, options } as any
+  }
+  /** validate incoming options and ensure argments type */
+  validate(opt: { options: Options; argments: Argments }): {
+    options: Options
+    argments: Argments
+  } {
+    return validate(this, opt)
   }
 
   exec(args: string | string[], reminal: ReminalController) {
-    const { options, argments } = this.parse(args)
-    reminal.addLine(`> ${this.getFullName().join(' ')} ${args}`)
+    const text = `${this.getFullName().join(' ')} ${
+      args instanceof Array ? args.join(' ') : args
+    }`
+    reminal.addLine(createElement(reminal.renders.HistoryRender, { text }))
+
+    const { options, argments } = this.validate(this.parse(args))
     return this.meta.action?.({ options, argments, reminal, command: this })
   }
 }
@@ -277,3 +291,5 @@ function isTemplateStringsArray(
 type DeepRecord<K extends string, V> = K extends `${infer T1}.${infer T2}`
   ? { [P in T1]: DeepRecord<T2, V> }
   : { [P in K]: V }
+
+export * from './errors'

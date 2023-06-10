@@ -26,7 +26,10 @@ export const helpCommand = new Command('help')
     return createElement(reminal.renders.HelpRender, { text: help })
   })
 
-function getSubCommand(parent: CommandGroup, names: string[]) {
+function getSubCommand(
+  parent: CommandGroup,
+  names: string[]
+): Command<void, []> | undefined {
   const subcommand = parent.map.get(names[0])
   if (subcommand instanceof CommandGroup) {
     return getSubCommand(subcommand, names.slice(1))

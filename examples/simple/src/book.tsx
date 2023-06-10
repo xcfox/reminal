@@ -21,12 +21,28 @@ export const book = commandGroup('book')
   .add(
     command('add')
       .description('添加图书')
-      .option('book.name', '书名', { required: true })
-      .option('book.author', '作者', { required: true })
+      .argment('name', '书名')
+      .argment('author', '作者', { default: '鲁迅' })
       .option('lendOut', '是否借出', { type: Boolean })
-      .action(({ options }) => {
-        bookList.push(new Book(options.book.name, options.book.author))
+      .action(({ argments: [name, author] }) => {
+        bookList.push(new Book(name, author))
         return '添加成功'
+      })
+  )
+  .add(
+    command('info')
+      .description('查看图书信息')
+      .argment('indexs', '图书索引', { type: [Number] })
+      .action(({ argments }) => {
+        return argments
+          .map((index) => {
+            const book = bookList[index]
+            if (!book) {
+              return `图书不存在：${index}`
+            }
+            return `${book.name} - ${book.author}`
+          })
+          .join('\n')
       })
   )
   .add(

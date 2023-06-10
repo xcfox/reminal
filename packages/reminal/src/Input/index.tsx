@@ -87,8 +87,6 @@ const Tips = memo<{
   )
 })
 
-// TODO: 参数与选项提示
-
 export function useTextarea() {
   const {
     value,

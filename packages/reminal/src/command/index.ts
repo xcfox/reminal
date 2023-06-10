@@ -162,10 +162,10 @@ export class Command<
       Merge<
         Options,
         Required extends true
-          ? { [P in N]: CommandOptionType<T> }
+          ? DeepRecord<N, CommandOptionType<T>>
           : Default extends undefined
-          ? { [P in N]?: CommandOptionType<T> }
-          : { [P in N]: CommandOptionType<T> }
+          ? DeepRecord<N, CommandOptionType<T> | undefined>
+          : DeepRecord<N, CommandOptionType<T>>
       >,
       Argments
     >
@@ -273,3 +273,7 @@ function isTemplateStringsArray(
     typeof (value as TemplateStringsArray).raw !== 'undefined'
   return false
 }
+
+type DeepRecord<K extends string, V> = K extends `${infer T1}.${infer T2}`
+  ? { [P in T1]: DeepRecord<T2, V> }
+  : { [P in K]: V }

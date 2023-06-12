@@ -18,7 +18,9 @@ import { Command, CommandGroup, CommandOption } from '..'
 import { commandScore } from '../utils/command-score'
 
 export const Input = memo(() => {
-  const { bind, isFocused, tips, focusedTipIndex } = useTextarea()
+  const { bind, isFocused, selectedWord } = useTextarea()
+
+  const { tips, focusedTipIndex } = useTips(selectedWord, bind.ref)
 
   return (
     <>
@@ -38,7 +40,7 @@ export const Input = memo(() => {
 })
 
 const Tips = memo<{
-  tips: ReturnType<typeof useTextarea>['tips']
+  tips: ReturnType<typeof useTips>['tips']
   focusedTipIndex: number
 }>(({ tips, focusedTipIndex }) => {
   if (tips.type === 'options') {
@@ -87,35 +89,14 @@ const Tips = memo<{
   )
 })
 
-export function useTextarea() {
-  const {
-    value,
-    setValue,
-    historyValue,
-    setHistoryValue,
-    setTipValue,
-    realValue,
-  } = useContext(inputValueContext)
-  const [focusedTipIndex, setFocusedTipIndex] = useState(-1)
+export function useTextarea(refIn?: React.RefObject<HTMLTextAreaElement>) {
+  const innerRef = useRef<HTMLTextAreaElement>(null)
+  const ref = refIn ?? innerRef
+  const { setValue, setHistoryValue, setTipValue, realValue } =
+    useContext(inputValueContext)
   const [isFocused, setIsFocused] = useState(false)
 
   const [selectedWord, setSelectedWord] = useState('')
-
-  const history = useContext(historyContext)
-
-  const ref = useRef<HTMLTextAreaElement>(null)
-  /** 当输入框值改变时清除临时值 */
-  useEffect(() => {
-    if (value) {
-      setHistoryValue(undefined)
-      setTipValue(undefined)
-      setFocusedTipIndex(-1)
-    }
-  }, [setHistoryValue, setTipValue, value])
-
-  const tips = useTips(historyValue ?? value, selectedWord)
-
-  const lastSelectionStart = useRef(0)
 
   const reminal = useReminal()
   const onKeyDown = useCallback(
@@ -128,10 +109,124 @@ export function useTextarea() {
           reminal.execute(realValue)
         }
         e.preventDefault()
-      } else if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
+      } else {
+        requestAnimationFrame(() => {
+          const t = ref.current
+          if (!t) return
+          setSelectedWord(getSelectedWord(t))
+        })
+      }
+    },
+    [realValue, ref, reminal, setHistoryValue, setTipValue, setValue]
+  )
+
+  const onChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setValue(e.target.value)
+      e.target.style.height = '5px'
+      e.target.style.height = e.target.scrollHeight + 'px'
+    },
+    [setValue]
+  )
+
+  const scrollToBottom = useContext(scrollToBottomContext)
+  useEffect(() => {
+    if (isFocused) scrollToBottom()
+  }, [isFocused, scrollToBottom])
+
+  const bind = useMemo(
+    () => ({
+      ref,
+      autoFocus: true,
+      onKeyDown,
+      onChange,
+      onFocus: () => setIsFocused(true),
+      onBlur: () => setIsFocused(false),
+      value: realValue,
+      rows: 1,
+    }),
+    [onChange, onKeyDown, realValue, ref]
+  )
+
+  return { isFocused, selectedWord, bind }
+}
+
+export function useTips(
+  selectedWord: string,
+  refIn?: React.RefObject<HTMLTextAreaElement>
+) {
+  const innerRef = useRef<HTMLTextAreaElement>(null)
+  const ref = refIn ?? innerRef
+  const { root } = useReminal()
+
+  const { setHistoryValue, historyValue, value, setTipValue } =
+    useContext(inputValueContext)
+  const input = historyValue ?? value
+
+  const matchedCommand = useMemo(() => {
+    return root.matchCommand(input)
+  }, [input, root])
+
+  const commandList = useMemo(() => {
+    if (matchedCommand && selectedWord.startsWith('-'))
+      return { type: 'options' as const, list: flatOption(matchedCommand) }
+    return { type: 'commands' as const, list: flatGroup(root) }
+  }, [matchedCommand, root, selectedWord])
+
+  const tips = useMemo(() => {
+    if (commandList.type === 'options')
+      return {
+        type: commandList.type,
+        list: commandList.list
+          .map((opt) => ({
+            ...opt,
+            score: commandScore(opt.name, selectedWord),
+          }))
+          .filter((opt) => opt.score > 0)
+          .sort((a, b) => b.score - a.score),
+      }
+
+    return {
+      type: commandList.type,
+      list: commandList.list
+        .map((cmd) => ({
+          ...cmd,
+          score: commandScore(cmd.name, input),
+        }))
+        .filter((cmd) => cmd.score > 0)
+        .sort((a, b) => b.score - a.score),
+    }
+  }, [commandList.list, commandList.type, input, selectedWord])
+
+  const lastSelectionStart = useRef(0)
+
+  const [focusedTipIndex, setFocusedTipIndex] = useState(-1)
+
+  /** 当输入框值改变时清除临时值 */
+  useEffect(() => {
+    if (value) {
+      setHistoryValue(undefined)
+      setTipValue(undefined)
+      setFocusedTipIndex(-1)
+    }
+  }, [setHistoryValue, setTipValue, value])
+
+  const history = useContext(historyContext)
+
+  const dependencyList = useRef({ history, setHistoryValue, setTipValue, tips })
+  useMemo(() => {
+    dependencyList.current = { history, setHistoryValue, setTipValue, tips }
+  }, [history, setHistoryValue, setTipValue, tips])
+
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const handleArrow = (e: KeyboardEvent) => {
+      const { history, setHistoryValue, setTipValue, tips } =
+        dependencyList.current
+      if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
         if (tips.list.length > 0 || history.current.length > 0) {
           e.preventDefault()
-          // FIXME: 与历史记录一起使用时冲突
           setFocusedTipIndex((index) => {
             let nextValue = index + (e.key === 'ArrowUp' ? -1 : 1)
             // 修正越界
@@ -188,94 +283,15 @@ export function useTextarea() {
             return nextValue
           })
         }
-      } else {
-        requestAnimationFrame(() => {
-          const t = ref.current
-          if (!t) return
-          setSelectedWord(getSelectedWord(t))
-        })
       }
-    },
-    [
-      history,
-      realValue,
-      reminal,
-      setHistoryValue,
-      setTipValue,
-      setValue,
-      tips.list,
-      tips.type,
-    ]
-  )
-
-  const onChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setValue(e.target.value)
-      e.target.style.height = '5px'
-      e.target.style.height = e.target.scrollHeight + 'px'
-    },
-    [setValue]
-  )
-
-  const scrollToBottom = useContext(scrollToBottomContext)
-  useEffect(() => {
-    if (isFocused) scrollToBottom()
-  }, [isFocused, scrollToBottom])
-
-  const bind = useMemo(
-    () => ({
-      ref,
-      autoFocus: true,
-      onKeyDown,
-      onChange,
-      onFocus: () => setIsFocused(true),
-      onBlur: () => setIsFocused(false),
-      value: realValue,
-      rows: 1,
-    }),
-    [onChange, onKeyDown, realValue]
-  )
-
-  return { isFocused, tips, focusedTipIndex, bind }
-}
-
-export function useTips(input: string, selectedWord: string) {
-  const { root } = useReminal()
-
-  const matchedCommand = useMemo(() => {
-    return root.matchCommand(input)
-  }, [input, root])
-
-  const commandList = useMemo(() => {
-    if (matchedCommand && selectedWord.startsWith('-'))
-      return { type: 'options' as const, list: flatOption(matchedCommand) }
-    return { type: 'commands' as const, list: flatGroup(root) }
-  }, [matchedCommand, root, selectedWord])
-
-  return useMemo(() => {
-    if (commandList.type === 'options')
-      return {
-        type: commandList.type,
-        list: commandList.list
-          .map((opt) => ({
-            ...opt,
-            score: commandScore(opt.name, selectedWord),
-          }))
-          .filter((opt) => opt.score > 0)
-          .sort((a, b) => b.score - a.score),
-      }
-
-    return {
-      type: commandList.type,
-      list: commandList.list
-        .map((cmd) => ({
-          ...cmd,
-          score: commandScore(cmd.name, input),
-        }))
-        .filter((cmd) => cmd.score > 0)
-        .sort((a, b) => b.score - a.score),
     }
-  }, [commandList, input, selectedWord])
+
+    element.addEventListener('keydown', handleArrow)
+
+    return () => element.removeEventListener('keydown', handleArrow)
+  }, [ref])
+
+  return { tips, focusedTipIndex }
 }
 
 export interface CommandAbstract {

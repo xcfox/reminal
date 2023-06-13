@@ -1,5 +1,5 @@
 import React, { createElement } from 'react'
-import { Command } from '.'
+import { Command, CommandNotFoundError } from '.'
 import { ReminalController } from '../context'
 import { notNil } from '../utils/notNil'
 
@@ -126,7 +126,7 @@ export class CommandGroup {
       reminal.addLine(
         createElement(renders.HistoryRender, { text: fullCommand })
       )
-      const error = new Error(`Command ${fullCommand} not found`)
+      const error = new CommandNotFoundError(fullCommand)
       reminal.addLine(createElement(renders.ErrorRender, { error }))
     }
   }

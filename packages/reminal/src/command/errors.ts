@@ -22,6 +22,15 @@ export class OptionError extends Error {
   }
 }
 
+export class CommandNotFoundError extends Error {
+  fullName: string
+  constructor(fullName: string) {
+    super(`command ${fullName} not found`)
+    this.name = 'CommandNotFoundError'
+    this.fullName = fullName
+  }
+}
+
 export class ArgmentError extends Error {
   meta: {
     incomingValue: any

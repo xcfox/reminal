@@ -128,10 +128,6 @@ export class CommandGroup {
       )
       const error = new Error(`Command ${fullCommand} not found`)
       reminal.addLine(createElement(renders.ErrorRender, { error }))
-
-      reminal.addLine(
-        createElement(renders.HelpRender, { text: this.getHelp() })
-      )
     }
   }
 }

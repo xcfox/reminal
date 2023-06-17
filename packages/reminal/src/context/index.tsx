@@ -9,26 +9,26 @@ import React, {
 import { createContext } from 'react'
 import { Command } from '../command'
 import { CommandGroup } from '../command/group'
-import { RenimalRenders, defaultRenders } from './TextRender'
-import { Mutatable } from './Mutatable'
+import { ReminalRenders, defaultRenders } from './TextRender'
+import { Active } from './Active'
 
 export interface ReminalController {
   root: CommandGroup
   execute: (command: string) => void
   addLine: (line: React.ReactNode) => void
-  addMutatableLine: <T extends object>(
+  addActiveLine: <T extends object>(
     Component: React.ComponentType<T>,
     props: T
   ) => (props: T) => void
   clearLines: () => void
-  renders: RenimalRenders
+  renders: ReminalRenders
 }
 
 export const reminalContext = createContext<ReminalController>({
   root: new CommandGroup(''),
   execute: () => undefined,
   addLine: () => undefined,
-  addMutatableLine: () => () => undefined,
+  addActiveLine: () => () => undefined,
   clearLines: () => undefined,
   renders: defaultRenders,
 })
@@ -78,12 +78,12 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
     }, [commands])
 
     const scrollToBottom = useCallback(() => {
-      const scroller = scrollContainer?.current ?? window
+      const scrolled = scrollContainer?.current ?? window
       const top =
-        scroller instanceof HTMLElement
-          ? scroller.scrollHeight
-          : scroller.document.body.scrollHeight
-      scroller.scrollTo({ top, behavior: 'smooth' })
+        scrolled instanceof HTMLElement
+          ? scrolled.scrollHeight
+          : scrolled.document.body.scrollHeight
+      scrolled.scrollTo({ top, behavior: 'smooth' })
     }, [scrollContainer])
 
     const { lines, executing, history, ...reminal } = useReminalLines({
@@ -123,13 +123,13 @@ export function useReminalLines({
     setLines((lines) => [...lines, line])
   }, [])
 
-  const addMutatableLine = useCallback(
+  const addActiveLine = useCallback(
     <T extends object>(Component: React.ComponentType<T>, props: T) => {
       const ref = React.createRef<{
         forceUpdate: (props: T) => void
       }>()
       const line = (
-        <Mutatable actionRef={ref} Component={Component} props={props} />
+        <Active actionRef={ref} Component={Component} props={props} />
       )
       setLines((lines) => [...lines, line])
       const update = (props: T) => ref.current?.forceUpdate(props)
@@ -151,7 +151,7 @@ export function useReminalLines({
         clearLines,
         root,
         renders,
-        addMutatableLine,
+        addActiveLine,
       }
       try {
         setExecuting(true)
@@ -170,7 +170,7 @@ export function useReminalLines({
         setExecuting(false)
       }
     },
-    [addLine, addMutatableLine, clearLines, renders, root]
+    [addLine, addActiveLine, clearLines, renders, root]
   )
 
   return {
@@ -178,7 +178,7 @@ export function useReminalLines({
     execute,
     addLine,
     clearLines,
-    addMutatableLine,
+    addActiveLine,
     history,
     executing,
   }

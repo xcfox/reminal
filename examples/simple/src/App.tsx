@@ -5,9 +5,9 @@ import { book } from './book'
 
 const echo = command('echo')
   .description('echo a string')
-  .argment('args', 'args', { type: [String] })
-  .action(({ argments }) => {
-    return argments.join(' ')
+  .argument('args', 'args', { type: [String] })
+  .action(({ args }) => {
+    return args.join(' ')
   })
 
 const count = command('count')
@@ -25,10 +25,10 @@ const context = command('context')
 
 const timeout = command('timeout')
   .description('倒计时')
-  .argment('time', '倒计时时间', { type: Number })
-  .action(async ({ argments, reminal }) => {
-    let time = Number(argments[0]) || 10
-    const update = reminal.addMutatableLine(Timeout, { time })
+  .argument('time', '倒计时时间', { type: Number })
+  .action(async ({ args, reminal }) => {
+    let time = Number(args[0]) || 10
+    const update = reminal.addActiveLine(Timeout, { time })
     await new Promise<void>((resolve) => {
       tick()
       function tick() {
@@ -43,11 +43,13 @@ const timeout = command('timeout')
     })
   })
 
+export const commands = [echo, count, context, book, timeout]
+
 function App() {
   return (
     <div style={{ width: '100vw', maxWidth: '100%' }}>
       <normalContext.Provider value="hello">
-        <Reminal commands={[echo, count, context, book, timeout]} />
+        <Reminal commands={commands} />
       </normalContext.Provider>
     </div>
   )

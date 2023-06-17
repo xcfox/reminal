@@ -21,10 +21,10 @@ export const book = commandGroup('book')
   .add(
     command('add')
       .description('添加图书')
-      .argment('name', '书名')
-      .argment('author', '作者', { default: '鲁迅' })
+      .argument('name', '书名')
+      .argument('author', '作者', { default: '鲁迅' })
       .option('lendOut', '是否借出', { type: Boolean })
-      .action(({ argments: [name, author] }) => {
+      .action(({ args: [name, author] }) => {
         bookList.push(new Book(name, author))
         return '添加成功'
       })
@@ -32,9 +32,9 @@ export const book = commandGroup('book')
   .add(
     command('info')
       .description('查看图书信息')
-      .argment('indexs', '图书索引', { type: [Number] })
-      .action(({ argments }) => {
-        return argments
+      .argument('indexes', '图书索引', { type: [Number] })
+      .action(({ args }) => {
+        return args
           .map((index) => {
             const book = bookList[index]
             if (!book) {
@@ -57,9 +57,9 @@ export const book = commandGroup('book')
   .add(
     command('delete')
       .description('删除图书')
-      .argment('name', '书名', { type: [String] })
-      .action(({ argments }) => {
-        const index = bookList.findIndex((book) => book.name === argments[0])
+      .argument('name', '书名', { type: [String] })
+      .action(({ args }) => {
+        const index = bookList.findIndex((book) => book.name === args[0])
         if (index === -1) {
           return '图书不存在'
         }

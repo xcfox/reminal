@@ -1,0 +1,157 @@
+[
+  {
+    "name": "echo",
+    "description": "echo a string",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "args"
+            }
+          },
+          "required": [
+            "args"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "count",
+    "description": "获得一个计数器",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "context",
+    "description": "获得一个上下文",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "book__add",
+    "description": "添加图书",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "书名"
+            },
+            "author": {
+              "type": "string",
+              "description": "作者",
+              "default": "鲁迅"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "lendOut": {
+              "type": "boolean",
+              "description": "是否借出"
+            }
+          },
+          "required": [
+            "lendOut"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "book__info",
+    "description": "查看图书信息",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "indexes": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "图书索引"
+            }
+          },
+          "required": [
+            "indexes"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "book__list",
+    "description": "查看图书列表",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "book__delete",
+    "description": "删除图书",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "书名"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "timeout",
+    "description": "倒计时",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "type": "object",
+          "properties": {
+            "time": {
+              "type": "number",
+              "description": "倒计时时间"
+            }
+          },
+          "required": [
+            "time"
+          ]
+        }
+      }
+    }
+  }
+]

@@ -28,21 +28,21 @@ export interface CommandOption<
   alias?: string[]
 }
 
-export type CommandArgment<T extends OptionType = typeof String> = Omit<
+export type CommandArgument<T extends OptionType = typeof String> = Omit<
   CommandOption<T, any, CommandOptionType<T>>,
   'alias' | 'required'
 >
 
 export interface CommandMeta<
   Options extends Record<string, unknown> | void = void,
-  Argments extends unknown[] = unknown[]
+  Arguments extends unknown[] = unknown[]
 > {
   name: string
   alias?: string[]
   description?: string
   options?: CommandOption<OptionType, any, any>[]
-  argments?: CommandArgment<any>[]
-  action?: CommandAction<Options, Argments>
+  args?: CommandArgument<any>[]
+  action?: CommandAction<Options, Arguments>
 }
 
 export interface CommandContext {
@@ -52,19 +52,19 @@ export interface CommandContext {
 
 export type CommandAction<
   Options extends Record<string, unknown> | void = void,
-  Argments extends unknown[] = unknown[]
+  Arguments extends unknown[] = unknown[]
 > = (args: {
   options: Options
-  argments: Argments
+  args: Arguments
   reminal: ReminalController
-  command: Command<Options, Argments>
+  command: Command<Options, Arguments>
 }) => Promise<React.ReactNode | void> | React.ReactNode | void
 
 export class Command<
   Options extends Record<string, unknown> | void = void,
-  Argments extends unknown[] = []
+  Arguments extends unknown[] = []
 > {
-  meta: CommandMeta<Options, Argments>
+  meta: CommandMeta<Options, Arguments>
   constructor(name: string) {
     this.meta = { name }
   }
@@ -76,7 +76,7 @@ export class Command<
 
   /** Get a deep copy of the command */
   fork() {
-    const command = new Command<Options, Argments>(this.meta.name)
+    const command = new Command<Options, Arguments>(this.meta.name)
     command.meta = { ...this.meta }
     return command
   }
@@ -94,20 +94,20 @@ export class Command<
     help.push(
       'Usage:',
       `  ${fullName} ${
-        this.meta.argments?.map((arg) => `<${arg.name}>`).join(' ') ?? ''
+        this.meta.args?.map((arg) => `<${arg.name}>`).join(' ') ?? ''
       } ${this.meta.options?.length ? '[options]' : ''}`
     )
 
-    if (this.meta.argments?.length) {
+    if (this.meta.args?.length) {
       help.push('')
-      help.push('Argments:')
+      help.push('Arguments:')
       help.push(
-        ...(this.meta.argments?.map((arg) => {
+        ...(this.meta.args?.map((arg) => {
           const name = arg.name
           const description = arg.description ?? ''
-          let argmentH = `  ${name}`
-          argmentH += ` - ${description}`
-          return argmentH
+          let argumentH = `  ${name}`
+          argumentH += ` - ${description}`
+          return argumentH
         }) ?? [])
       )
     }
@@ -168,29 +168,29 @@ export class Command<
           ? DeepRecord<N, CommandOptionType<T> | undefined>
           : DeepRecord<N, CommandOptionType<T>>
       >,
-      Argments
+      Arguments
     >
   }
 
-  argment<T extends OptionType = typeof String>(
+  argument<T extends OptionType = typeof String>(
     name: string,
     description: string,
-    options?: Omit<CommandArgment<T>, 'name' | 'description'>
+    options?: Omit<CommandArgument<T>, 'name' | 'description'>
   ) {
-    const argment = { name, description, ...options }
-    this.meta.argments ??= []
-    const last = this.meta.argments[this.meta.argments.length - 1]
+    const argument = { name, description, ...options }
+    this.meta.args ??= []
+    const last = this.meta.args[this.meta.args.length - 1]
     if (last && Array.isArray(last.type)) {
-      throw new Error('Cannot add argment after variadic argment')
+      throw new Error('Cannot add argument after variadic argument')
     }
-    this.meta.argments.push(argment)
+    this.meta.args.push(argument)
     return this as unknown as Command<
       Options,
-      ConcatTuple<Argments, CommandArgmentType<T>>
+      ConcatTuple<Arguments, CommandArgumentType<T>>
     >
   }
 
-  action(fn: CommandAction<Options, Argments>) {
+  action(fn: CommandAction<Options, Arguments>) {
     this.meta.action = fn
     return this
   }
@@ -198,23 +198,23 @@ export class Command<
   /** passe args by yargs-parser */
   parse(argsI: string[] | string | TemplateStringsArray): {
     options: Options
-    argments: Argments
+    arguments: Arguments
   } {
     const args = isTemplateStringsArray(argsI) ? argsI.join(' ') : argsI
-    const paserOptions = {} as parse.Options
+    const parserOptions = {} as parse.Options
     this.meta.options?.forEach((option) => {
       if (option.type === String || option.type === undefined) {
-        paserOptions.string ??= []
-        paserOptions.string.push(option.name)
+        parserOptions.string ??= []
+        parserOptions.string.push(option.name)
       } else if (option.type === Number) {
-        paserOptions.number ??= []
-        paserOptions.number.push(option.name)
+        parserOptions.number ??= []
+        parserOptions.number.push(option.name)
       } else if (option.type === Boolean) {
-        paserOptions.boolean ??= []
-        paserOptions.boolean.push(option.name)
+        parserOptions.boolean ??= []
+        parserOptions.boolean.push(option.name)
       } else if (Array.isArray(option.type)) {
-        paserOptions.array ??= []
-        const array = paserOptions.array as Array<{
+        parserOptions.array ??= []
+        const array = parserOptions.array as Array<{
           key: string
           boolean?: boolean | undefined
           number?: boolean | undefined
@@ -229,34 +229,39 @@ export class Command<
       }
 
       if (option.alias) {
-        paserOptions.alias ??= {}
-        paserOptions.alias[option.name] = option.alias
+        parserOptions.alias ??= {}
+        parserOptions.alias[option.name] = option.alias
       }
       if (option.default) {
-        paserOptions.default ??= {}
-        paserOptions.default[option.name] = option.default
+        parserOptions.default ??= {}
+        parserOptions.default[option.name] = option.default
       }
     })
 
-    const { _: argments, ...options } = parse(args, paserOptions)
-    return { argments, options } as any
+    const { _: positional, ...options } = parse(args, parserOptions)
+    return { arguments: positional, options } as any
   }
-  /** validate incoming options and ensure argments type */
-  validate(opt: { options: Options; argments: Argments }): {
+  /** validate incoming options and ensure arguments type */
+  validate(opt: { options: Options; arguments: Arguments }): {
     options: Options
-    argments: Argments
+    arguments: Arguments
   } {
     return validate(this, opt)
   }
 
-  exec(args: string | string[], reminal: ReminalController) {
+  exec(positional: string | string[], reminal: ReminalController) {
     const text = `${this.getFullName().join(' ')} ${
-      args instanceof Array ? args.join(' ') : args
+      positional instanceof Array ? positional.join(' ') : positional
     }`
     reminal.addLine(createElement(reminal.renders.HistoryRender, { text }))
 
-    const { options, argments } = this.validate(this.parse(args))
-    return this.meta.action?.({ options, argments, reminal, command: this })
+    const { options, arguments: args } = this.validate(this.parse(positional))
+    return this.meta.action?.({
+      options,
+      args,
+      reminal,
+      command: this,
+    })
   }
 }
 
@@ -276,7 +281,7 @@ type CommandOptionType<T extends OptionType> = T extends Array<any>
   ? ReturnType<UnwrapArray<T>>[]
   : ReturnType<UnwrapArray<T>>
 
-type CommandArgmentType<T extends OptionType> = T extends Array<any>
+type CommandArgumentType<T extends OptionType> = T extends Array<any>
   ? ReturnType<UnwrapArray<T>>[]
   : [ReturnType<UnwrapArray<T>>]
 

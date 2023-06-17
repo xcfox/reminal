@@ -1,4 +1,4 @@
-import type { Command, CommandArgment, CommandOption } from '..'
+import type { Command, CommandArgument, CommandOption } from '..'
 import { flattenObject } from '../utils/flatten-object'
 import { recordBy } from '../utils/record-by'
 
@@ -31,14 +31,14 @@ export class CommandNotFoundError extends Error {
   }
 }
 
-export class ArgmentError extends Error {
+export class ArgumentError extends Error {
   meta: {
     incomingValue: any
-    argment: CommandArgment<any>
+    argument: CommandArgument<any>
     type: OptionErrorType
     command: Command<any, any>
   }
-  constructor(message: string, meta: ArgmentError['meta']) {
+  constructor(message: string, meta: ArgumentError['meta']) {
     super(message)
     this.name = 'ValidateError'
     this.meta = meta
@@ -47,111 +47,111 @@ export class ArgmentError extends Error {
 
 export function validate<
   Options extends Record<string, unknown> | void = void,
-  Argments extends unknown[] = []
+  Arguments extends unknown[] = []
 >(
-  command: Command<Options, Argments>,
+  command: Command<Options, Arguments>,
   {
     options,
-    argments: argmentsInput,
+    arguments: argumentsInput,
   }: {
     options: Options
-    argments: Argments
+    arguments: Arguments
   }
 ): {
   options: Options
-  argments: Argments
+  arguments: Arguments
 } {
   const errors: Error[] = []
-  // ensure argments type
-  const argments = argmentsInput.slice().filter((s) => s !== '')
-  command.meta.argments?.forEach((argmentMeta, i) => {
-    argmentMeta.type ??= String
-    const argI = argments[i]
-    if (argmentMeta.type === Number) {
-      const value = argI ?? argmentMeta.default
+  // ensure arguments type
+  const args = argumentsInput.slice().filter((s) => s !== '')
+  command.meta.args?.forEach((argumentMeta, i) => {
+    argumentMeta.type ??= String
+    const argI = args[i]
+    if (argumentMeta.type === Number) {
+      const value = argI ?? argumentMeta.default
       if (value == null) {
         errors.push(
-          new ArgmentError(
-            `argment ${argmentMeta.name} must be number, but got ${argI}`,
+          new ArgumentError(
+            `argument ${argumentMeta.name} must be number, but got ${argI}`,
             {
               incomingValue: undefined,
-              argment: argmentMeta,
+              argument: argumentMeta,
               type: OptionErrorType.lack,
               command,
             }
           )
         )
       }
-      argments[i] = Number(argI ?? argmentMeta.default)
-      if (Number.isNaN(argments[i])) {
+      args[i] = Number(argI ?? argumentMeta.default)
+      if (Number.isNaN(args[i])) {
         errors.push(
-          new ArgmentError(
-            `argment ${argmentMeta.name} must be number, but got ${argI}`,
+          new ArgumentError(
+            `argument ${argumentMeta.name} must be number, but got ${argI}`,
             {
-              incomingValue: argments[i],
-              argment: argmentMeta,
+              incomingValue: args[i],
+              argument: argumentMeta,
               type: OptionErrorType.wrongType,
               command,
             }
           )
         )
       }
-    } else if (argmentMeta.type === String) {
-      const value = argI ?? argmentMeta.default
+    } else if (argumentMeta.type === String) {
+      const value = argI ?? argumentMeta.default
       if (value == null) {
         errors.push(
-          new ArgmentError(
-            `argment ${argmentMeta.name} must be string, but got ${argI}`,
+          new ArgumentError(
+            `argument ${argumentMeta.name} must be string, but got ${argI}`,
             {
               incomingValue: undefined,
-              argment: argmentMeta,
+              argument: argumentMeta,
               type: OptionErrorType.lack,
               command,
             }
           )
         )
       }
-      argments[i] = String(value)
-    } else if (argmentMeta.type === Boolean) {
-      const value = argI ?? argmentMeta.default
+      args[i] = String(value)
+    } else if (argumentMeta.type === Boolean) {
+      const value = argI ?? argumentMeta.default
       if (value == null) {
         errors.push(
-          new ArgmentError(
-            `argment ${argmentMeta.name} must be boolean, but got ${argI}`,
+          new ArgumentError(
+            `argument ${argumentMeta.name} must be boolean, but got ${argI}`,
             {
               incomingValue: undefined,
-              argment: argmentMeta,
+              argument: argumentMeta,
               type: OptionErrorType.lack,
               command,
             }
           )
         )
       }
-      argments[i] = Boolean(value)
-    } else if (argmentMeta.type === Array) {
-      let argmentsJ = argments.slice(i)
-      if (argmentsJ.length === 0 && argmentMeta.default)
-        argmentsJ = argmentMeta.default
-      argmentsJ.forEach((argJ, j) => {
-        if (argmentMeta.type[0] === Number) {
-          argments[i + j] = Number(argJ)
-          if (Number.isNaN(argments[i + j])) {
+      args[i] = Boolean(value)
+    } else if (argumentMeta.type === Array) {
+      let argumentsJ = args.slice(i)
+      if (argumentsJ.length === 0 && argumentMeta.default)
+        argumentsJ = argumentMeta.default
+      argumentsJ.forEach((argJ, j) => {
+        if (argumentMeta.type[0] === Number) {
+          args[i + j] = Number(argJ)
+          if (Number.isNaN(args[i + j])) {
             errors.push(
-              new ArgmentError(
-                `argment ${i + j} must be number, but got ${argJ}`,
+              new ArgumentError(
+                `argument ${i + j} must be number, but got ${argJ}`,
                 {
                   incomingValue: undefined,
-                  argment: argmentMeta,
+                  argument: argumentMeta,
                   type: OptionErrorType.lack,
                   command,
                 }
               )
             )
           }
-        } else if (argmentMeta.type[0] === String) {
-          argments[i + j] = String(argJ)
-        } else if (argmentMeta.type[0] === Boolean) {
-          argments[i + j] = Boolean(argJ)
+        } else if (argumentMeta.type[0] === String) {
+          args[i + j] = String(argJ)
+        } else if (argumentMeta.type[0] === Boolean) {
+          args[i + j] = Boolean(argJ)
         }
       })
     }
@@ -191,5 +191,5 @@ export function validate<
   })
 
   if (errors.length) throw errors
-  return { options, argments } as any
+  return { options, arguments: args } as any
 }

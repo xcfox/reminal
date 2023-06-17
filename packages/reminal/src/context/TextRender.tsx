@@ -1,6 +1,6 @@
 import React, { memo } from 'react'
 
-export interface RenimalRenders {
+export interface ReminalRenders {
   TextRender: TextRender
   HistoryRender: TextRender
   HelpRender: TextRender
@@ -51,7 +51,7 @@ export const DefaultErrorRender: ErrorRender = memo(({ error }) => {
   return <>❌{text}</>
 })
 
-export const defaultRenders: RenimalRenders = {
+export const defaultRenders: ReminalRenders = {
   TextRender: DefaultTextRender,
   ErrorRender: DefaultErrorRender,
   HistoryRender: DefaultHistoryRender,

@@ -6,6 +6,7 @@ import { ProviderProps } from './context'
 export * from './command'
 export * from './context'
 export * from './Input'
+export * from './utils'
 
 const ReminalInner: React.FC = () => {
   const lines = useContext(linesContext)

@@ -7,11 +7,15 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "gen:schema": "vite-node ./scripts/genSchema.ts",
     "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "reminal": "workspace:*"
+  },
+  "devDependencies": {
+    "vite-node": "^0.32.2"
   }
 }

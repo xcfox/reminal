@@ -5,9 +5,9 @@ import { CommandGroup } from './group'
 export const helpCommand = new Command('help')
   .description('Show help documents')
   .alias('h', '?')
-  .argment('command', 'The command to show help documents', { type: [String] })
-  .action(({ command, reminal, argments }) => {
-    const subCommandNames = argments.slice()
+  .argument('command', 'The command to show help documents', { type: [String] })
+  .action(({ command, reminal, args }) => {
+    const subCommandNames = args.slice()
     if (command.parent && subCommandNames.length) {
       const subcommand = getSubCommand(command.parent, subCommandNames)
       if (!subcommand)

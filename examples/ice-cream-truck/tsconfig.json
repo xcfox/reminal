@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "paths": {
+      "@repo/reminal": ["../../packages/reminal/src"]
+    }
+  },
+  "include": ["src"]
+}

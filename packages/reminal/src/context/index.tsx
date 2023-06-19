@@ -2,6 +2,7 @@ import React, {
   memo,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -63,10 +64,17 @@ export interface ProviderProps {
   commands?: (Command<any, any> | CommandGroup)[] | CommandGroup
   renders?: Partial<ReminalController['renders']>
   scrollContainer?: React.RefObject<HTMLElement>
+  autoScroll?: boolean
 }
 
 export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
-  ({ children, commands, renders: rendersIn, scrollContainer }) => {
+  ({
+    children,
+    commands,
+    renders: rendersIn,
+    scrollContainer,
+    autoScroll = true,
+  }) => {
     const renders = useMemo<ReminalController['renders']>(() => {
       return { ...defaultRenders, ...rendersIn }
     }, [rendersIn])
@@ -90,6 +98,11 @@ export const Provider = memo<React.PropsWithChildren<ProviderProps>>(
       root,
       renders,
     })
+
+    useEffect(() => {
+      if (autoScroll) scrollToBottom()
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoScroll, lines[lines.length - 1], scrollToBottom])
 
     return (
       <linesContext.Provider value={lines}>

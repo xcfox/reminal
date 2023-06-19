@@ -7,12 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  historyContext,
-  inputValueContext,
-  scrollToBottomContext,
-  useReminal,
-} from '../context'
+import { historyContext, inputValueContext, useReminal } from '../context'
 import React from 'react'
 import { Command, CommandGroup, CommandOption } from '..'
 import { commandScore } from '../utils/command-score'
@@ -128,11 +123,6 @@ export function useTextarea(refIn?: React.RefObject<HTMLTextAreaElement>) {
     },
     [setValue]
   )
-
-  const scrollToBottom = useContext(scrollToBottomContext)
-  useEffect(() => {
-    if (isFocused) scrollToBottom()
-  }, [isFocused, scrollToBottom])
 
   const bind = useMemo(
     () => ({

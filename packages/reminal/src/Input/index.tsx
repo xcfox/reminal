@@ -225,11 +225,10 @@ export function useTips(
           setFocusedTipIndex((index) => {
             let nextValue = index + (e.key === 'ArrowUp' ? -1 : 1)
             // 修正越界
-            if (
-              nextValue > tips.list.length - 1 ||
-              nextValue < -1 - history.current.length
-            ) {
-              nextValue = -1
+            if (nextValue > tips.list.length - 1) {
+              nextValue = tips.list.length - 1
+            } else if (nextValue < -1 - history.current.length) {
+              nextValue = -1 - history.current.length
             }
 
             // 记录光标位置

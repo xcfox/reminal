@@ -105,11 +105,13 @@ export function useTextarea(refIn?: React.RefObject<HTMLTextAreaElement>) {
         }
         e.preventDefault()
       } else {
-        requestAnimationFrame(() => {
-          const t = ref.current
-          if (!t) return
-          setSelectedWord(getSelectedWord(t))
-        })
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+          requestAnimationFrame(() => {
+            const t = ref.current
+            if (!t) return
+            setSelectedWord(getSelectedWord(t))
+          })
+        }
       }
     },
     [realValue, ref, reminal, setHistoryValue, setTipValue, setValue]

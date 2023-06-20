@@ -217,7 +217,10 @@ export function useTips(
       const { history, setHistoryValue, setTipValue, tips } =
         dependencyList.current
       if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
-        if (tips.list.length > 0 || history.current.length > 0) {
+        if (
+          tips.list.length > 0 ||
+          (history.current.length > 0 && !input.includes('\n'))
+        ) {
           e.preventDefault()
           setFocusedTipIndex((index) => {
             let nextValue = index + (e.key === 'ArrowUp' ? -1 : 1)
@@ -281,9 +284,9 @@ export function useTips(
     element.addEventListener('keydown', handleArrow)
 
     return () => element.removeEventListener('keydown', handleArrow)
-  }, [ref])
+  }, [input, ref])
 
-  return { tips, focusedTipIndex }
+  return { tips, focusedTipIndex, matchedCommand }
 }
 
 export interface CommandAbstract {

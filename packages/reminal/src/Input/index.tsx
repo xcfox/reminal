@@ -151,7 +151,7 @@ export function useTips(
   const ref = refIn ?? innerRef
   const { root } = useReminal()
 
-  const { setHistoryValue, historyValue, value, setTipValue } =
+  const { setHistoryValue, historyValue, value, tipValue, setTipValue } =
     useContext(inputValueContext)
   const input = historyValue ?? value
 
@@ -196,12 +196,18 @@ export function useTips(
 
   /** 当输入框值改变时清除临时值 */
   useEffect(() => {
-    if (value) {
+    if (value != null) {
       setHistoryValue(undefined)
       setTipValue(undefined)
       setFocusedTipIndex(-1)
     }
   }, [setHistoryValue, setTipValue, value])
+
+  /** 重置输入值的同时重置当前提示索引 */
+  useEffect(() => {
+    if (tipValue === undefined && historyValue === undefined && value === '')
+      setFocusedTipIndex(-1)
+  }, [historyValue, tipValue, value])
 
   const history = useContext(historyContext)
 
@@ -288,13 +294,16 @@ export function useTips(
   return { tips, focusedTipIndex, matchedCommand }
 }
 
-export interface CommandAbstract {
+export interface Tip {
   name: string
+  description?: string
+}
+
+export interface CommandAbstract extends Tip {
   commands: Command<any, any> | CommandGroup
 }
 
-export interface CommandOptionAbstract {
-  name: string
+export interface CommandOptionAbstract extends Tip {
   option: CommandOption<any, any, any>
 }
 
@@ -303,11 +312,13 @@ export function flatOption(command: Command<any, any>) {
   for (const option of command.meta.options ?? []) {
     options.push({
       name: '--' + option.name,
+      description: option.description,
       option,
     })
     if (option.type === Boolean) {
       options.push({
         name: '--no-' + option.name,
+        description: option.description,
         option,
       })
     }
@@ -320,6 +331,7 @@ export function flatGroup(group: CommandGroup): CommandAbstract[] {
   for (const cmd of group.commands) {
     commands.push({
       name: cmd.getFullName().join(' '),
+      description: cmd.meta.description,
       commands: cmd,
     })
     if (cmd instanceof CommandGroup) {

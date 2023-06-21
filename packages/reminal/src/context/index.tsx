@@ -61,9 +61,20 @@ export function useReminal() {
 }
 
 export interface ProviderProps {
+  /**
+   * commands
+   */
   commands?: (Command<any, any> | CommandGroup)[] | CommandGroup
+  /** Custom renders for `lines`.
+   */
   renders?: Partial<ReminalController['renders']>
+  /** The container to scroll when `lines` changes.
+   * @default window
+   */
   scrollContainer?: React.RefObject<HTMLElement>
+  /** Should `lines` scroll automatically as the length of ``lines changes?
+   * @default true
+   */
   autoScroll?: boolean
 }
 

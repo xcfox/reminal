@@ -21,6 +21,11 @@
   "scripts": {
     "build": "unbuild"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xcfox/reminal.git",
+    "directory": "packages/reminal"
+  },
   "peerDependencies": {
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"

@@ -1,8 +1,8 @@
-import { generateJsonSchema } from 'reminal'
+import { SchemaBuilder } from 'reminal'
 import { commands } from '../src/App'
 import fs from 'fs'
 
-const schema = generateJsonSchema(commands)
+const schema = new SchemaBuilder(commands).buildJsonSchema()
 const json = JSON.stringify(schema, null, 2)
 
 fs.writeFile('./commands-schema.json', json, (err) => {

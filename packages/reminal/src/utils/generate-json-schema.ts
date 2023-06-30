@@ -79,7 +79,9 @@ export class SchemaBuilder {
       if (value === undefined) return ''
       return `--${option.name} ${value}`
     })
-    return [name, args?.join(' '), options?.join(' ')].join(' ')
+    return [name.replace(/__/g, ' '), args?.join(' '), options?.join(' ')].join(
+      ' '
+    )
   }
 }
 

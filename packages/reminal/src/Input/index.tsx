@@ -73,6 +73,9 @@ const Tips = memo<{
           }
         >
           <span>{tip.name}</span>
+          {tip.args && (
+            <span style={{ marginLeft: '1em', opacity: 0.7 }}>{tip.args}</span>
+          )}
           {tip.commands.meta.description && (
             <span style={{ marginLeft: '1em' }}>
               {` - ${tip.commands.meta.description}`}
@@ -301,6 +304,7 @@ export interface Tip {
 
 export interface CommandAbstract extends Tip {
   commands: Command<any, any> | CommandGroup
+  args?: string
 }
 
 export interface CommandOptionAbstract extends Tip {
@@ -333,6 +337,7 @@ export function flatGroup(group: CommandGroup): CommandAbstract[] {
       name: cmd.getFullName().join(' '),
       description: cmd.meta.description,
       commands: cmd,
+      args: cmd instanceof Command ? cmd.argumentTip() : undefined,
     })
     if (cmd instanceof CommandGroup) {
       commands.push(...flatGroup(cmd))

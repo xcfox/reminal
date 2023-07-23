@@ -25,7 +25,7 @@ const context = command('context')
 
 const timeout = command('timeout')
   .description('倒计时')
-  .argument('time', '倒计时时间', { type: Number })
+  .argument('time', '倒计时时间', { type: Number, default: 10 })
   .action(async ({ args, reminal }) => {
     let time = Number(args[0]) || 10
     const update = reminal.addActiveLine(Timeout, { time })

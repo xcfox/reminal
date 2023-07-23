@@ -190,6 +190,18 @@ export class Command<
     >
   }
 
+  /** 获取参数格式 */
+  argumentTip(): string {
+    const args = this.meta.args ?? []
+    return args
+      .map((arg) => {
+        const required = arg.default == null
+        const name = Array.isArray(arg.type) ? '...' + arg.name : arg.name
+        return required ? `<${name}>` : `[${name}]`
+      })
+      .join(' ')
+  }
+
   action(fn: CommandAction<Options, Arguments>) {
     this.meta.action = fn
     return this
